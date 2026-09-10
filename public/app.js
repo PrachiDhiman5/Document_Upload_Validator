@@ -9,13 +9,13 @@ function renderDocuments(docs) {
   const tbody = document.getElementById("documents-tbody");
   tbody.innerHTML = docs
     .map((d) => {
-      const badgeClass = d.status === "ACCEPTED" ? "rejected" : "accepted";
+      const badgeClass = d.status === "ACCEPTED" ? "accepted" : "rejected";
       return `
         <tr data-id="${d.id}">
           <td>${d.id}</td>
           <td>${d.fileName}</td>
           <td>${d.mimeType}</td>
-          <td>${d.sizeKB} MB</td>
+          <td>${d.sizeKB} KB</td>
           <td>${d.docType}</td>
           <td><span class="badge ${badgeClass}">${d.status}</span></td>
           <td><button class="danger row-delete" type="button">Delete</button></td>
@@ -27,7 +27,12 @@ function renderDocuments(docs) {
     btn.addEventListener("click", async (e) => {
       const row = e.target.closest("tr");
       const id = row.dataset.id;
-      await fetch(`/api/documents/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        row.remove();
+      } else {
+        showToast("Failed to delete document", "error");
+      }
     });
   });
 }
@@ -52,9 +57,14 @@ document.getElementById("upload-form").addEventListener("submit", async (e) => {
     body: JSON.stringify({ fileName, mimeType, sizeKB, docType }),
   });
 
-  showToast("Document uploaded successfully!", "success");
+  const data = await res.json();
 
-  loadDocuments();
+  if (res.status === 201 || (res.ok && data.status === "ACCEPTED")) {
+    showToast("Document uploaded successfully!", "success");
+    loadDocuments();
+  } else {
+    showToast(data.reason || data.error || "Document rejected", "error");
+  }
 });
 
 // --- Interviewer/candidate tooling: reset seed data (not part of the app-under-test) ---

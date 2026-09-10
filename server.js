@@ -57,22 +57,36 @@ const { makeSeed } = require('./data');
 app.use(perStudentStore(makeSeed));
 app.use(express.static(path.join(__dirname, "public")));
 
+const ALLOWED_DOC_TYPES = ["PAN", "AADHAAR", "PAYSLIP", "DEGREE"];
+
 function validateDocument(body, documents) {
   const errors = [];
   const { fileName, mimeType, sizeKB, docType } = body || {};
 
-  if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType)) {
+  // 1. fileName must be a non-blank string
+  if (typeof fileName !== "string" || fileName.trim() === "") {
+    errors.push("fileName is a required, non-blank string");
+  }
+
+  // 2. mimeType checked case-insensitively
+  const normalizedMime = typeof mimeType === "string" ? mimeType.toLowerCase() : "";
+  if (!ALLOWED_MIME_TYPES.includes(normalizedMime)) {
     errors.push("Invalid or unsupported mimeType");
   }
 
-  if (typeof sizeKB !== "number" || sizeKB >= MAX_SIZE_KB) {
-    errors.push("File too large");
+  // 3. sizeKB must be > 0 and <= 5120 (5120 is accepted)
+  if (typeof sizeKB !== "number" || isNaN(sizeKB) || sizeKB <= 0 || sizeKB > MAX_SIZE_KB) {
+    errors.push("File size must be greater than 0 and less than or equal to 5120 KB");
   }
 
-  // Identity documents (PAN, AADHAAR) must be unique per candidate — reject
-  // a new one if that doc type is already on file.
+  // 4. docType must be one of the 4 allowed enum values
+  if (!ALLOWED_DOC_TYPES.includes(docType)) {
+    errors.push("Invalid docType");
+  }
+
+  // 5. Identity documents (PAN, AADHAAR) must be unique per candidate (checked by docType, regardless of fileName)
   const UNIQUE_DOC_TYPES = ["PAN", "AADHAAR"];
-  if (UNIQUE_DOC_TYPES.includes(docType) && documents.some((d) => d.fileName === fileName)) {
+  if (UNIQUE_DOC_TYPES.includes(docType) && documents.some((d) => d.docType === docType && d.status === "ACCEPTED")) {
     errors.push(`A ${docType} document is already on file`);
   }
 
@@ -87,32 +101,39 @@ app.post("/api/documents", (req, res) => {
   const errors = validateDocument(req.body, req.store.documents);
   const isValid = errors.length === 0;
 
+  if (!isValid) {
+    // Rejected document: return 400 and do NOT store in documents list
+    return res.status(400).json({
+      status: "REJECTED",
+      reason: errors[0],
+      errors: errors
+    });
+  }
+
+  // Accepted document: store and return 201 Created
   const doc = {
     id: req.store.nextDocId++,
-    fileName: (req.body && req.body.fileName) || "",
-    mimeType: (req.body && req.body.mimeType) || "",
-    sizeKB: (req.body && req.body.sizeKB) ?? null,
-    docType: (req.body && req.body.docType) || "",
-    status: isValid ? "ACCEPTED" : "REJECTED",
-    reason: isValid ? null : errors[0],
+    fileName: req.body.fileName,
+    mimeType: typeof req.body.mimeType === "string" ? req.body.mimeType.toLowerCase() : req.body.mimeType,
+    sizeKB: req.body.sizeKB,
+    docType: req.body.docType,
+    status: "ACCEPTED",
     createdAt: new Date().toISOString(),
   };
 
-  if (!isValid) {
-    req.store.documents.push(doc);
-    res.status(200).json(doc);
-    return;
-  }
-
   req.store.documents.push(doc);
-  res.status(200).json(doc);
+  res.status(201).json(doc);
 });
 
 app.delete("/api/documents/:id", (req, res) => {
   const id = parseInt(req.params.id, 10);
 
-  req.store.documents.splice(id - 1, 1);
+  const index = req.store.documents.findIndex((d) => d.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: "Document not found" });
+  }
 
+  req.store.documents.splice(index, 1);
   res.status(200).json({ success: true });
 });
 
