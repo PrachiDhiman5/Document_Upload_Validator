@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Document Upload Validator</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Document Upload Validator</h1>
+    <p class="subtitle">Validate BGV document metadata (no real files, metadata only)</p>
+    <div class="header-actions"><a href="/spec" target="_blank" rel="noopener" class="header-btn">📋 Spec</a><a href="/openapi.json" target="_blank" rel="noopener" class="header-btn">📥 API collection</a><button type="button" id="reset-data-btn" class="header-btn">↺ Reset data</button></div>
+  </header>
+
+  <div id="app-section">
+  <main>
+    <section class="panel">
+      <h2>Upload Document Metadata</h2>
+      <form id="upload-form">
+        <label>
+          File Name
+          <input type="text" id="fileName" placeholder="e.g. pan_card.pdf" />
+        </label>
+        <label>
+          Mime Type
+          <select id="mimeType">
+            <option value="png">PNG</option>
+            <option value="pdf">PDF</option>
+            <option value="jpg">JPG</option>
+          </select>
+        </label>
+        <label>
+          Size (KB)
+          <input type="number" id="sizeKB" placeholder="e.g. 1200" />
+        </label>
+        <label>
+          Document Type
+          <select id="docType">
+            <option value="">Select Type</option>
+            <option value="PAN">PAN</option>
+            <option value="AADHAAR">AADHAAR</option>
+            <option value="PAYSLIP">PAYSLIP</option>
+            <option value="DEGREE">DEGREE</option>
+          </select>
+        </label>
+        <button type="submit">Upload</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Documents</h2>
+      <table id="documents-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>File Name</th>
+            <th>Mime Type</th>
+            <th>Size</th>
+            <th>Doc Type</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="documents-tbody"></tbody>
+      </table>
+    </section>
+  </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+  <script>window.SV_APP_ID='03';window.SV_SCOREBOARD='https://sv-qa-scoreboard.onrender.com';</script>
+  <script src="report-widget.js"></script>
+</body>
+</html>
