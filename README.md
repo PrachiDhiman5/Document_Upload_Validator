@@ -136,55 +136,8 @@ npx jest test_cases/testcase-001-wrong-status-code.test.js
 ### 3. `public/index.html` — Form Template Fix
 * Added `<option value="">Select MIME type</option>` placeholder so `PNG` is not selected by default.
 
----
 
-## 7. Interview Guide: Explaining Test Cases & Writing New Ones
-
-### A. The 3-A Pattern for Explaining Any Test Case in an Interview
-Every test case follows the standard **AAA (Arrange, Act, Assert)** pattern:
-1. **Arrange (Setup):** Prepare the input payload, parameters, or test environment.
-2. **Act (Execution):** Trigger the action (e.g. make an HTTP request to the endpoint or render UI).
-3. **Assert (Verification):** Check that the actual response matches the expected specification (`expect(...)`).
-
-#### Example Explanation for Test Case 001:
-> *"In Test Case 001, we test the HTTP status code contract of `POST /api/documents`. In the **Arrange** step, we prepare two payloads: one valid payslip and one invalid GIF. In the **Act** step, we POST both payloads to the API. In the **Assert** step, we verify that the valid payload returns `201 Created` and the invalid payload returns `400 Bad Request`. In the buggy app, the server returned `200` for both, which caused this test to fail and highlighted the defect."*
-
----
-
-### B. How to Write a New Test Case from Scratch
-
-If an interviewer asks you to write a test case on the spot (for example, testing that `sizeKB` must not be a string like `"abc"`):
-
-```javascript
-// Step 1: Import helpers
-const { startTestServer, request } = require('./helpers');
-
-describe('Test Case — Reject Non-Numeric File Sizes', () => {
-  // Step 2: Initialize test server lifecycle
-  startTestServer();
-
-  test('should return 400 when sizeKB is a string', async () => {
-    // Step 3: Arrange
-    const payload = {
-      fileName: 'test.pdf',
-      mimeType: 'pdf',
-      sizeKB: 'abc', // Invalid string size
-      docType: 'PAYSLIP'
-    };
-
-    // Step 4: Act
-    const response = await request('POST', '/api/documents', payload);
-
-    // Step 5: Assert
-    expect(response.status).toBe(400);
-    expect(response.body.status).not.toBe('ACCEPTED');
-  });
-});
-```
-
----
-
-## 8. Final Test Execution Results
+## 7. Final Test Execution Results
 
 After applying all bug fixes:
 ```text
